@@ -72,7 +72,7 @@ def testFirst(path):
 def main():
     scanPath = 'scanned'
     formalPath = 'prepros'
-    test = True # turn False to properly sort
+    test = False # turn False to properly sort
     files = os.listdir()
     files.sort()
 
