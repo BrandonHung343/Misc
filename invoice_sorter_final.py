@@ -21,11 +21,17 @@ def combiner(direc, finPath=None):
     pdfWriter = PyPDF2.PdfFileWriter()
     itemName = direc.split('/')[-1]
     print(itemName)
+    name = itemName + '.pdf'
     
     if finPath is not None:
-        final_file = open(os.path.join(finPath, itemName + '.pdf'), 'wb')
+        if name in os.listdir(finPath):
+            os.remove(os.path.join(finPath, name))
+        final_file = open(os.path.join(finPath, name), 'wb')
+        
     else:
-        final_file = open(os.path.join(os.pardir, itemName + '.pdf'), 'wb')
+        if name in os.listdir(os.pardir):
+            os.remove(os.path.join(os.pardir, name))
+        final_file = open(os.path.join(os.pardir, name), 'wb')
     
     for item in sorted(os.listdir(direc)):
         if item.endswith('pdf'):
@@ -143,7 +149,7 @@ def main():
         
         w, h = image_jpeg.size
         image_jpeg.crop(w//2, 0, width=(7 * w)//8, height=h//8)
-        image_jpeg.gaussian_blur(3, 1.5) # check the results for this; if not working, change the sigma, It appears a little big
+        image_jpeg.gaussian_blur(3, 2) # check the results for this; if not working, change the sigma, It appears a little big
         # display(image_jpeg)
         
         for img in image_jpeg.sequence:
@@ -206,10 +212,10 @@ def main():
     if not test:
         cleanPre(formalPath)
         cleanScanned(scanPath)
+        
     else:
         testFirst(formalPath)
         cleanScanned(scanPath)
-        
     
     log.close()
     
