@@ -114,7 +114,7 @@ def main():
     in_dict['last'] = roundHalfUp(time.time())
     
     # hardcoded number to match the number of invoices expected
-    count = 100
+    count = 1000
     tool = pyocr.get_available_tools()[0]
     lang = tool.get_available_languages()[0]
     
@@ -148,8 +148,8 @@ def main():
                 pdf_collection.close()
                 
             except Exception as e:
-                log.write('Error for scanning document ' + scanFileName + '\n')
-                os.rename('scanned/' + scanFileName, 'misfiled/misfiled_collection_' + str(in_dict['msc']) + '.pdf')
+                log.write('Error while scanning document ' + scanFileName + '\n')
+                os.rename('scanned/' + scanFileName, 'misfiled/' + scanFileName)
                 in_dict['msc'] += 1
     
     preprosList = os.listdir(formalPath)
@@ -174,18 +174,29 @@ def main():
         image_jpeg.gaussian_blur(3, 2) # check the results for this; if not working, change the sigma, It appears a little big
         # display(image_jpeg)
         
-        for img in image_jpeg.sequence:
-            img_page = Image(image=img)
-            req_image.append(img_page.make_blob('jpeg'))
-            # turns them into blobs and does pyocr
+        # handle exceptions from the image processing
+        try:
+            for img in image_jpeg.sequence:
+                img_page = Image(image=img)
+                req_image.append(img_page.make_blob('jpeg'))
+                # turns them into blobs and does pyocr
             
-        for img in req_image:
-            txt = tool.image_to_string(
-            PI.open(io.BytesIO(img)),
-            lang=lang,
-            builder=pyocr.builders.TextBuilder()
-            )
-            final_text.append(txt)
+            for img in req_image:
+                txt = tool.image_to_string(
+                PI.open(io.BytesIO(img)),
+                lang=lang,
+                builder=pyocr.builders.TextBuilder()
+                )
+                final_text.append(txt)
+
+        except Exception as e: 
+            errMsg = 'Error while reading ' + file + ';, need to rescan. Moved to misfiled. Computer says ' + e + ' \n'
+            print(errMsg)
+            log.write(errMsg)
+            os.rename(formalPath + '/' + file, 'misfiled/misfiled_' + file)
+            counter = 0
+            in_dict['msf'] += 1
+            continue
         
         for item in final_text:            
             temp = item.strip().split()
@@ -195,7 +206,18 @@ def main():
                 print("invoice")
                 # if detected, saves in the final path with number as name
                 i = temp.index("Invoice")
-                assert(i != len(temp))
+                # catches the error if the length is not correct
+                try: 
+                    assert(i != len(temp))
+                except Exception as e:
+                    errMsg = 'Error for document ' + file + ';, invoice number not read. Moved to misfiled. Computer says ' + e + ' \n'
+                    print(errMsg)
+                    log.write(errMsg)
+                    os.rename(formalPath + '/' + file, 'misfiled/' + file)
+                    counter = 0
+                    in_dict['msf'] += 1
+                    break
+
                 possText = temp[i+1]
                 dirName = possText.strip().split()[0] 
                 fiName = dirName + '.pdf'
@@ -222,23 +244,43 @@ def main():
                     break
                 
                 except Exception as e:
-                    log.write('Error for document ' + file + ';, likely a duplicate file. Computer says ' + e + ' \n')
-                    
+                    errMsg = 'Error for document ' + file + ';, likely a duplicate file. Moved to misfiled. Computer says ' + e + ' \n'
+                    print(errMsg)
+                    log.write(errMsg)
+                    os.rename(formalPath + '/' + file, 'misfiled/' + file)
+                    counter = 0
+                    in_dict['msf'] += 1
+                    break
+
             else:
                 if path is not None:
                     if dirName not in os.listdir(formalPath):
-                        print('made')
-                        os.mkdir(formalPath + '/' + dirName)
-                    if counter >= 6:
-                        log.write('Error for document ' + file + ';, may be incorrectly filed. \n')
-                        os.rename(formalPath + '/' + file, 'misfiled/misfiled_' + str(in_dict['msf']) + '.pdf')
+                        try: 
+                            print('made')
+                            os.mkdir(formalPath + '/' + dirName)
+                        except Exception as e:
+                            errMsg = 'Error on ' + file + '; could not make the the folder\n'
+                            print(errMsg)
+                            log.write(errMsg)
+                            os.rename(formalPath + '/' + file, 'misfiled/' + file)
+                            break
+                    # 
+                    if counter >= 10:
+                        errMsg = 'Error for document ' + file + ';, may be with the wrong invoice. Moved to misfiled \n'
+                        print(errMsg)
+                        log.write(errMsg)
+                        os.rename(formalPath + '/' + file, 'misfiled/' + file)
                     else:
                         os.rename(formalPath + '/' + file, path + "/" + 'support_doc_' + str(numbers_dict[dirName] + counter + 1) + '.pdf')
                 else:
-                    log.write('Error for document misfiled/misfiled_' + str(in_dict['msf']) + '.pdf;, not successfully scanned.\n')
-                    os.rename(formalPath + '/' + file, 'misfiled/misfiled_' + str(in_dict['msf']) + '.pdf')
+                    errMsg = 'Error on ' + file + '; Moved to misfiled. Invoice + PO documents probably need to be rescanned \n'
+                    print(errMsg)
+                    log.write(errMsg)
+                    os.rename(formalPath + '/' + file, 'misfiled/' + file)
                     counter = 0
                     in_dict['msf'] += 1
+                    break
+
             counter += 1
             print("Counter", counter)
             print(numbers_dict[dirName])
