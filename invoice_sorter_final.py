@@ -219,7 +219,8 @@ def main():
             temp = item.strip().split()
             for i in range(len(temp)):
                 temp[i] = temp[i].strip()
-            if "Invoice" in temp:
+                temp[i] = temp[i].lower()
+            if "invoice" in temp:
                 # print("invoice")
                 # if detected, saves in the final path with number as name
                 i = temp.index("Invoice")
