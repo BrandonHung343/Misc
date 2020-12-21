@@ -9,6 +9,19 @@ import PyPDF2
 import time
 import pickle
 import shutil
+import ctypes
+import signal
+
+s = time.ctime()
+dis = s.split()
+name = dis[1] + "_" + dis[2] + "_" + dis[4]
+log = open('error_log_' + name + '.txt', 'a')
+
+def signal_handler(sig, frame):
+    global log
+    log.flush()
+    log.close()
+    sys.exit(0)
 
 def roundHalfUp(num):
     if num*10%10 >= 5:
@@ -90,12 +103,15 @@ def testFirst(path):
             os.remove('prepros/' + direcs)
     
 def main():
+    global log
     scanPath = 'scanned'
     formalPath = 'prepros'
     clearPrepros(formalPath)
     test = False # turn False to properly sort
     files = os.listdir()
     files.sort()
+    hadErrors = False
+    signal.signal(signal.SIGINT, signal_handler)
 
     if not 'count.pickle' in files:
         makePickle()
@@ -120,14 +136,11 @@ def main():
     
     # used to count the number of supporting documents following an invoice
     counter = 0
-    s = time.ctime()
-    dis = s.split()
-    name = dis[1] + "_" + dis[2] + "_" + dis[4]
-
+    
     numbers_dict = {}
     
     # error log to record any misfiled documents
-    log = open('error_log_' + name + '.txt', 'a') 
+    print("Reading scans...")
 
     for scanFileName in os.listdir(scanPath):
         # Loops over items in file path, reads and adds
@@ -137,7 +150,7 @@ def main():
                 pdf_collection = open(scanPath + '/' + scanFileName, 'rb')
                 pdfReader = PyPDF2.PdfFileReader(pdf_collection, strict=False)
                 for page in range(pdfReader.numPages):
-                    print('read')
+                    # print('read')
                     pageWriter = PyPDF2.PdfFileWriter()
                     with open(formalPath + '/' + 'prepros_' + str(count) + '.pdf', 'wb') as fi:
                         pageWriter.addPage(pdfReader.getPage(page))
@@ -151,9 +164,12 @@ def main():
                 log.write('Error while scanning document ' + scanFileName + '\n')
                 os.rename('scanned/' + scanFileName, 'misfiled/' + scanFileName)
                 in_dict['msc'] += 1
+                hadErrors = True
     
     preprosList = os.listdir(formalPath)
     preprosList.sort()
+
+    print("Done scanning")
     
     last_inv = ""
     first = True
@@ -171,7 +187,7 @@ def main():
         
         w, h = image_jpeg.size
         image_jpeg.crop(w//2, 0, width=(7 * w)//8, height=h//8)
-        image_jpeg.gaussian_blur(3, 2) # check the results for this; if not working, change the sigma, It appears a little big
+        image_jpeg.gaussian_blur(sigma=2.0, radius=5) # check the results for this; if not working, change the sigma, It appears a little big
         # display(image_jpeg)
         
         # handle exceptions from the image processing
@@ -196,6 +212,7 @@ def main():
             os.rename(formalPath + '/' + file, 'misfiled/misfiled_' + file)
             counter = 0
             in_dict['msf'] += 1
+            hadErrors = True
             continue
         
         for item in final_text:            
@@ -203,7 +220,7 @@ def main():
             for i in range(len(temp)):
                 temp[i] = temp[i].strip()
             if "Invoice" in temp:
-                print("invoice")
+                # print("invoice")
                 # if detected, saves in the final path with number as name
                 i = temp.index("Invoice")
                 # catches the error if the length is not correct
@@ -216,6 +233,7 @@ def main():
                     os.rename(formalPath + '/' + file, 'misfiled/' + file)
                     counter = 0
                     in_dict['msf'] += 1
+                    hadErrors = True
                     break
 
                 possText = temp[i+1]
@@ -225,9 +243,9 @@ def main():
                     last_inv = dirName
                     first = False 
                 if last_inv is not dirName:
-                    print("new invoice")
+                    print("New invoice")
                     numbers_dict[last_inv] = numbers_dict[last_inv] + counter + 1;
-                    print(numbers_dict)
+                    # print(numbers_dict)
                     counter = 0
                 try:
                     # print(os.listdir(formalPath))
@@ -250,26 +268,32 @@ def main():
                     os.rename(formalPath + '/' + file, 'misfiled/' + file)
                     counter = 0
                     in_dict['msf'] += 1
+                    hadErrors = True
                     break
 
             else:
                 if path is not None:
                     if dirName not in os.listdir(formalPath):
                         try: 
-                            print('made')
+                            # print('made')
                             os.mkdir(formalPath + '/' + dirName)
                         except Exception as e:
                             errMsg = 'Error on ' + file + '; could not make the the folder\n'
                             print(errMsg)
                             log.write(errMsg)
                             os.rename(formalPath + '/' + file, 'misfiled/' + file)
+                            hadErrors = True
                             break
                     # 
-                    if counter >= 10:
+                    if counter > 10:
                         errMsg = 'Error for document ' + file + ';, may be with the wrong invoice. Moved to misfiled \n'
                         print(errMsg)
                         log.write(errMsg)
-                        os.rename(formalPath + '/' + file, 'misfiled/' + file)
+                        try:
+                            os.rename(formalPath + '/' + file, 'misfiled/' + file)
+                        except Exception as e:
+                            log.write("While sorting into misfiled, computer says " + e)
+                            hadErrors = True
                     else:
                         os.rename(formalPath + '/' + file, path + "/" + 'support_doc_' + str(numbers_dict[dirName] + counter + 1) + '.pdf')
                 else:
@@ -279,11 +303,12 @@ def main():
                     os.rename(formalPath + '/' + file, 'misfiled/' + file)
                     counter = 0
                     in_dict['msf'] += 1
+                    hadErrors = True
                     break
 
             counter += 1
             print("Counter", counter)
-            print(numbers_dict[dirName])
+            # print(numbers_dict[dirName])
             
                     
     pickle.dump(in_dict, open('count.pickle', 'wb'))
@@ -297,6 +322,12 @@ def main():
         cleanScanned(scanPath)
     
     log.close()
+    
+    windowText = "No errors, yay!"
+    if (hadErrors):
+        windowText = "Errors while scanning, please see today's error log error_log_" + name + ".txt for more information"
+    ctypes.windll.user32.MessageBoxW(0, windowText, "Invoice Sorter Message Box", 0)
+
     
 if __name__ == '__main__':
     main()
