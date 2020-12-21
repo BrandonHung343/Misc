@@ -223,7 +223,7 @@ def main():
             if "invoice" in temp:
                 # print("invoice")
                 # if detected, saves in the final path with number as name
-                i = temp.index("Invoice")
+                i = temp.index("invoice")
                 # catches the error if the length is not correct
                 try: 
                     assert(i != len(temp))
