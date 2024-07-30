@@ -5,3 +5,7 @@
 /scanned
 /test
 /misfiled
+/imagemagick
+*.db
+*.lnk
+*.pickle

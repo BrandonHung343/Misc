@@ -3,12 +3,15 @@ from wand.image import Image
 from PIL import Image as PI
 import pyocr
 import pyocr.builders
+import pytesseract
 import io
 import os
+import errno
 import PyPDF2
 import time
 import pickle
 import shutil
+import stat
 import ctypes
 import signal
 
@@ -16,6 +19,15 @@ s = time.ctime()
 dis = s.split()
 name = dis[1] + "_" + dis[2] + "_" + dis[4]
 log = open('error_log_' + name + '.txt', 'a')
+
+# Does some magic to remove the read only functions, from stack overflow
+def handleRemoveReadonly(func, path, exc):
+  excvalue = exc[1]
+  if func in (os.rmdir, os.remove) and excvalue.errno == errno.EACCES:
+      os.chmod(path, stat.S_IRWXU| stat.S_IRWXG| stat.S_IRWXO) # 0777
+      func(path)
+  else:
+      raise
 
 def signal_handler(sig, frame):
     global log
@@ -36,26 +48,33 @@ def combiner(direc, finPath=None):
     itemName = direc.split('/')[-1]
     print(itemName)
     name = itemName + '.pdf'
-    
+
+    # Checks if it already exists in the regular paths and erases if true    
     if finPath is not None:
+        save_path = os.path.join(finPath, name)
+        print("Saving to ", save_path)
         if name in os.listdir(finPath):
-            os.remove(os.path.join(finPath, name))
-        final_file = open(os.path.join(finPath, name), 'wb')
-    # Checks if it already exists, erases if it does
+            os.remove(save_path)
+        final_file = open(save_path, 'wb')
     else:
+        save_path = os.path.join(os.pardir, name)
+        print("Saving to ", save_path)
         if name in os.listdir(os.pardir):
-            os.remove(os.path.join(os.pardir, name))
-        final_file = open(os.path.join(os.pardir, name), 'wb')
+            os.remove(save_path)
+        final_file = open(save_path, 'wb')
+
     # Loops over sorted items, zips them up into a single file if they are pdf
-    for item in sorted(os.listdir(direc)):
-        if item.endswith('pdf'):
-            tempFile = open(direc + '/' + item, 'rb')
-            tempReader = PyPDF2.PdfFileReader(tempFile, strict=False)
-            for pageNum in range(tempReader.numPages):
-                pdfWriter.addPage(tempReader.getPage(pageNum))
-            pdfWriter.write(final_file)
-            tempFile.close()
-            
+    try:
+        for item in sorted(os.listdir(direc)):
+            if item.endswith('pdf'):
+                tempFile = open(direc + '/' + item, 'rb')
+                tempReader = PyPDF2.PdfFileReader(tempFile, strict=False)
+                for pageNum in range(tempReader.numPages):
+                    pdfWriter.addPage(tempReader.getPage(pageNum))
+                pdfWriter.write(final_file)
+                tempFile.close()
+    except Exception as e:
+        print("Error: ", e)        
     final_file.close()
     print('merged')
 
@@ -78,7 +97,7 @@ def cleanPre(path):
         if os.path.isdir(path + '/' + direcs):
             # print('made')
             combiner('prepros/' + direcs)
-            shutil.rmtree('prepros/' + direcs)
+            shutil.rmtree('prepros/' + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
         if direcs.endswith('pdf'):
             os.remove('prepros/' + direcs)
 
@@ -88,7 +107,7 @@ def clearPrepros(path):
         if os.path.isdir(path + '/' + direcs):
             # print('made')
 
-            shutil.rmtree('prepros/' + direcs)
+            shutil.rmtree('prepros/' + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
         if direcs.endswith('pdf'):
             os.remove('prepros/' + direcs)
 
@@ -98,7 +117,7 @@ def testFirst(path):
         # print(direcs)
         if os.path.isdir(path + '/' + direcs):
             # print('made')
-            shutil.rmtree('prepros/' + direcs)
+            shutil.rmtree('prepros/' + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
         if direcs.endswith('pdf'):
             os.remove('prepros/' + direcs)
     
@@ -131,6 +150,7 @@ def main():
     
     # hardcoded number to match the number of invoices expected
     count = 1000
+    pyocr.tesseract.TESSERACT_CMD = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
     tool = pyocr.get_available_tools()[0]
     lang = tool.get_available_languages()[0]
     
@@ -285,7 +305,7 @@ def main():
                             os.rename(formalPath + '/' + file, 'misfiled/' + file)
                             hadErrors = True
                             break
-                    # 
+                    # Checks to see if we have too many pages attached to this invoice
                     if counter > 10:
                         errMsg = 'Error for document ' + file + ';, may be with the wrong invoice. Moved to misfiled \n'
                         print(errMsg)
