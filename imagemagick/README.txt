@@ -1,21 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns="http://usefulinc.com/ns/doap#">
-
-  <Project>
-    <name>ImageMagick</name>
-    <shortdesc xml:lang="en">ImageMagick: convert, edit, or compose images.</shortdesc>
-    <homepage rdf:resource="http://www.imagemagick.org/"/>
-    <created>2017-03-07</created>
-
-    <description xml:lang="en">
 Introduction to ImageMagick
 
-  ImageMagick® is a software suite to create, edit, compose, or convert
+  ImageMagickÂ® is a software suite to create, edit, compose, or convert
   bitmap images. It can read and write images in a variety of formats (over
-  200) including PNG, JPEG, JPEG-2000, GIF, TIFF, DPX, EXR, WebP, Postscript,
+  200) including PNG, JPEG, GIF, HEIC, TIFF, DPX, EXR, WebP, Postscript,
   PDF, and SVG. Use ImageMagick to resize, flip, mirror, rotate, distort,
   shear and transform images, adjust image colors, apply various special
-  effects, or draw text, lines, polygons, ellipses and Bézier curves.
+  effects, or draw text, lines, polygons, ellipses and BÃ©zier curves.
   
   The functionality of ImageMagick is typically utilized from the command
   line or you can use the features from programs written in your favorite
@@ -39,13 +29,18 @@ Introduction to ImageMagick
   that includes memory error and thread data race detection to prevent
   security vulnerabilities.
 
-  ImageMagick is available from
-  https://www.imagemagick.org/script/download.php.  It runs on Linux, Windows,
-  Mac Os X, iOS, Android OS, and others.
+  The current release is the ImageMagick 6.9.10-* series. It runs on Linux,
+  Windows, Mac Os X, iOS, Android OS, and others.
 
-  The authoritative ImageMagick web site is
-  https://www.imagemagick.org. The authoritative source code repository is
-  http://git.imagemagick.org/repos/ImageMagick/.
+  The authoritative ImageMagick version 6 web site is
+  https://legacy.imagemagick.org. The authoritative source code repository
+  is https://github.com/ImageMagick/ImageMagick6. We maintain a source code
+  mirror at https://gitlab.com/ImageMagick/ImageMagick6.
+
+  The design of ImageMagick is an evolutionary process, with the design and
+  implementation efforts serving to influence and guide further progress in
+  the other. With ImageMagick version 7 we aim to improve the design based
+  on lessons learned from the version 6 implementation.
 
 
 Features and Capabilities
@@ -112,55 +107,25 @@ Features and Capabilities
   perform geometric transforms, blurs, sharpens, edging, noise removal,
   and color manipulations. With Magick.NET, use ImageMagick without having
   to install ImageMagick on your server or desktop.
-    </description>
 
-    <maintainer>
-      <foaf:Person>
-        <foaf:name>ImageMagick Studio LLC</foaf:name>
-        <foaf:homepage rdf:resource="http://www.imagemagick.org/"/>
-      </foaf:Person>
-    </maintainer>
+News
 
-    <release>
-      <Version>
-          <name>stable</name>
-          <created>2017-03-07</created>
-          <revision>6.9.8</revision>
-          <patch-level>-0</patch-level>
-      </Version>
-    </release>
+  ImageMagick version 7 has been released.
 
-    <download-page rdf:resource="http://www.imagemagick.org/script/download.php"/>
-    <download-mirror rdf:resource="http://sourceforge.net/projects/imagemagick/"/>
+  ImageMagick best practices strongly encourages you to configure a security
+  policy that best suits your local environment.
 
-    <!-- Licensing details -->
-    <license rdf:resource="http://www.imagemagick.org/script/license.php"/>
+  As an analog to linear (RGB) and non-linear (sRGB) color colorspaces, as
+  of ImageMagick 6.9.9-29, we introduce the LinearGray colorspace. Gray is
+  non-linear grayscale and LinearGray is linear (e.g. -colorspace linear-gray).
 
-    <!-- source repository -->
-    <repository>
-      <GITRepository>
-        <repositoryWebView rdf:resource="https://github.com/ImageMagick/ImageMagick"/>
-      </GITRepository>
-    </repository>
-  </Project>
+  Want more performance from ImageMagick? Try these options:
 
+    Add more memory to your system, see the pixel cache;
+    Add more cores to your system, see threads of execution support;
+    push large images to a solid-state drive, see large image support.
 
-  <!--
-       optional administravia:
-       authoring tools can add more here if they'd like.
-   -->
-  <rdf:Description rdf:about="">
-    <foaf:maker>
-      <foaf:Person>
-        <foaf:name>ImageMagick Studio LLC</foaf:name>
-        <foaf:homepage rdf:resource="http://www.imagemagick.org/"/>
-      </foaf:Person>
-    </foaf:maker>
-  </rdf:Description>
-
-</rdf:RDF>
-<!-- 
-Local variables:
-mode:nxml
-End:
--->
+  If these options are prohibitive, you can reduce the quality of the
+  image results. The default build is Q16. If you instead use a Q8 build,
+  you use half the memory The tradeoff is reduced precision. For a Q8 build
+  of ImageMagick, use this configure script option: --with-quantum-depth=8.
