@@ -120,6 +120,14 @@ def testFirst(path):
             shutil.rmtree('prepros/' + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
         if direcs.endswith('pdf'):
             os.remove('prepros/' + direcs)
+
+
+def checkForText(text: str, text_list: list) -> int:
+    """Finds the text index if it exists in the text_list"""
+    try:
+        return text_list.index(text)
+    except IndexError:
+        return -1
     
 def main():
     global log
@@ -240,15 +248,25 @@ def main():
             for i in range(len(temp)):
                 temp[i] = temp[i].strip()
                 temp[i] = temp[i].lower()
-            if "invoice" in temp:
+            invoice_index = checkForText("invoice", temp)
+            credit_index = checkForText("memo", temp)
+            if invoice_index > 0 or credit_index > 0:
                 # print("invoice")
                 # if detected, saves in the final path with number as name
-                i = temp.index("invoice")
                 # catches the error if the length is not correct
+                if credit_index > 0:
+                    i = credit_index
+                    doc_type = "invoice"
+                    doc_prefix = "cm"
+                else:
+                    i = invoice_index
+                    doc_type = "credit memo"
+                    doc_prefix = ""
+
                 try: 
                     assert(i != len(temp))
                 except Exception as e:
-                    errMsg = 'Error for document ' + file + ';, invoice number not read. Moved to misfiled. Computer says ' + e + ' \n'
+                    errMsg = 'Error for document ' + file + ';, ' + doc_type + ' number not read. Moved to misfiled. Computer says ' + e + ' \n'
                     print(errMsg)
                     log.write(errMsg)
                     os.rename(formalPath + '/' + file, 'misfiled/' + file)
@@ -259,13 +277,13 @@ def main():
 
                 possText = temp[i+1]
                 dirName = possText.strip().split()[0] 
-                fiName = dirName + '.pdf'
+                fiName = doc_prefix + dirName + '.pdf'
                 if first:
                     last_inv = dirName
                     first = False 
                 if last_inv is not dirName:
-                    print("New invoice")
-                    numbers_dict[last_inv] = numbers_dict[last_inv] + counter + 1;
+                    print("New " + doc_type)
+                    numbers_dict[last_inv] = numbers_dict[last_inv] + counter + 1
                     # print(numbers_dict)
                     counter = 0
                 try:
