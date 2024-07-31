@@ -1,4 +1,4 @@
-How to Set Up for Other Computers
+# How to Set Up for Other Computers
 
 1) After cloning this repo from Git into the proper file (contact Brandon for help), open up a command prompt window
 2) In the cmd prompt window, navigate to the repo
@@ -14,7 +14,7 @@ How to Set Up for Other Computers
 12) Type "print(pyocr.__file__)" and press enter. The file location will print for you. 
 13) Navigate to the location you found in step 12 on the File Explorer. Right click on builders.py, click "Edit with IDLE"
 14) In IDLE, use Edit -> Replace and replace every instance of "-psm" with "--psm". There should be around three of them.
-14b) You might need to install Ghostfire as well. 
-15) Save the file and exit. You're all set to run the invoice sorter now!
+15) You might need to install GhostScript as well. You can do this by following the instructions here: https://ghostscript.com/releases/gsdnld.html
+16) Save the file and exit. You're all set to run the invoice sorter now!
 
 
