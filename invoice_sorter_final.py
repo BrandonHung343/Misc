@@ -125,8 +125,10 @@ def testFirst(path):
 def checkForText(text: str, text_list: list) -> int:
     """Finds the text index if it exists in the text_list"""
     try:
+        print(f"Value {text} in text_list")
         return text_list.index(text)
-    except IndexError:
+    except ValueError:
+        print(f"Value error, {text} not in text")
         return -1
     
 def main():
@@ -250,18 +252,18 @@ def main():
                 temp[i] = temp[i].lower()
             invoice_index = checkForText("invoice", temp)
             credit_index = checkForText("memo", temp)
-            if invoice_index > 0 or credit_index > 0:
+            if invoice_index >= 0 or credit_index >= 0:
                 # print("invoice")
                 # if detected, saves in the final path with number as name
                 # catches the error if the length is not correct
-                if credit_index > 0:
-                    i = credit_index
-                    doc_type = "invoice"
-                    doc_prefix = "cm"
-                else:
+                if invoice_index >= 0:
                     i = invoice_index
-                    doc_type = "credit memo"
+                    doc_type = "invoice"
                     doc_prefix = ""
+                else:
+                    i = credit_index
+                    doc_type = "credit memo"
+                    doc_prefix = "cm"
 
                 try: 
                     assert(i != len(temp))
@@ -276,8 +278,9 @@ def main():
                     break
 
                 possText = temp[i+1]
-                dirName = possText.strip().split()[0] 
-                fiName = doc_prefix + dirName + '.pdf'
+                dirName = doc_prefix + possText.strip().split()[0] 
+                fiName = dirName + '.pdf'
+                print(fiName)
                 if first:
                     last_inv = dirName
                     first = False 
@@ -296,7 +299,6 @@ def main():
                         print("Number in dict", dirName)
                         os.rename(formalPath + '/'+ file, formalPath + '/' + dirName + "/" + str(numbers_dict[dirName]) + "_" + fiName)
                     path = formalPath + '/' + dirName
-                    print(os.listdir(path))
                     last_inv = dirName
                     break
                 
