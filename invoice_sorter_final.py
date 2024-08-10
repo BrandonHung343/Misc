@@ -130,6 +130,12 @@ def checkForText(text: str, text_list: list) -> int:
     except ValueError:
         print(f"Value error, {text} not in text")
         return -1
+
+def checkForNumber(text_list: list) -> str:
+    """Finds the text matching the expected invoice number format"""
+    for text in text_list:
+        if text.isnumeric() and len(text) >= 4:
+            return text
     
 def main():
     global log
@@ -258,11 +264,13 @@ def main():
                 if slip_index >= 0:
                     i = slip_index
                     doc_type = "slip"
-                    doc_prefix = ""
+                    doc_prefix = "ps"
+                    possText = checkForNumber(temp)
                 else:
                     i = credit_index
                     doc_type = "credit memo"
                     doc_prefix = "cm"
+                    possText = temp[i+1]
 
                 try: 
                     assert(i != len(temp))
@@ -276,7 +284,6 @@ def main():
                     hadErrors = True
                     break
 
-                possText = temp[i+1]
                 dirName = doc_prefix + possText.strip().split()[0] 
                 fiName = dirName + '.pdf'
                 print(fiName)
