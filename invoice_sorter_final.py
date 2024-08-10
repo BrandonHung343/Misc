@@ -40,7 +40,7 @@ def roundHalfUp(num):
         return int(num) + 1
     return int(num)
 
-# Combines items with the same invoice number name into a single pdf file 
+# Combines items with the same slip number name into a single pdf file 
 def combiner(direc, finPath=None):
     nameless = True
     count = 0
@@ -158,13 +158,13 @@ def main():
         in_dict['msc'] = 0
     in_dict['last'] = roundHalfUp(time.time())
     
-    # hardcoded number to match the number of invoices expected
+    # hardcoded number to match the number of slips expected
     count = 1000
     pyocr.tesseract.TESSERACT_CMD = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
     tool = pyocr.get_available_tools()[0]
     lang = tool.get_available_languages()[0]
     
-    # used to count the number of supporting documents following an invoice
+    # used to count the number of supporting documents following an slip
     counter = 0
     
     numbers_dict = {}
@@ -250,15 +250,14 @@ def main():
             for i in range(len(temp)):
                 temp[i] = temp[i].strip()
                 temp[i] = temp[i].lower()
-            invoice_index = checkForText("invoice", temp)
+            slip_index = checkForText("slip", temp)
             credit_index = checkForText("memo", temp)
-            if invoice_index >= 0 or credit_index >= 0:
-                # print("invoice")
+            if slip_index >= 0 or credit_index >= 0:
                 # if detected, saves in the final path with number as name
                 # catches the error if the length is not correct
-                if invoice_index >= 0:
-                    i = invoice_index
-                    doc_type = "invoice"
+                if slip_index >= 0:
+                    i = slip_index
+                    doc_type = "slip"
                     doc_prefix = ""
                 else:
                     i = credit_index
@@ -325,9 +324,9 @@ def main():
                             os.rename(formalPath + '/' + file, 'misfiled/' + file)
                             hadErrors = True
                             break
-                    # Checks to see if we have too many pages attached to this invoice
+                    # Checks to see if we have too many pages attached to this slip
                     if counter > 10:
-                        errMsg = 'Error for document ' + file + ';, may be with the wrong invoice. Moved to misfiled \n'
+                        errMsg = 'Error for document ' + file + ';, may be with the wrong slip. Moved to misfiled \n'
                         print(errMsg)
                         log.write(errMsg)
                         try:
@@ -338,7 +337,7 @@ def main():
                     else:
                         os.rename(formalPath + '/' + file, path + "/" + 'support_doc_' + str(numbers_dict[dirName] + counter + 1) + '.pdf')
                 else:
-                    errMsg = 'Error on ' + file + '; Moved to misfiled. Invoice + PO documents probably need to be rescanned \n'
+                    errMsg = 'Error on ' + file + '; Moved to misfiled. slip + PO documents probably need to be rescanned \n'
                     print(errMsg)
                     log.write(errMsg)
                     os.rename(formalPath + '/' + file, 'misfiled/' + file)
@@ -367,7 +366,7 @@ def main():
     windowText = "No errors, yay!"
     if (hadErrors):
         windowText = "Errors while scanning, please see today's error log error_log_" + name + ".txt for more information"
-    ctypes.windll.user32.MessageBoxW(0, windowText, "Invoice Sorter Message Box", 0)
+    ctypes.windll.user32.MessageBoxW(0, windowText, "slip Sorter Message Box", 0)
 
     
 if __name__ == '__main__':
