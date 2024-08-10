@@ -2,7 +2,7 @@
 ## This stack is meant to run on Python 3.6. It has not been tested for other versions of Python.
 1) After cloning this repo from Git into the proper file, open up a command prompt window
 2) In the cmd prompt window, navigate to this repo
-3) Once in the repo, type the line "pip install -r requirements.txt"
+3) Once in the repo, type the line `pip install -r requirements.txt`
 4) Once the libraries have been installed, extract the `tesseract.zip` file and run the extracted `tesseract.exe` file 
 5) Install Imagemagick and add it to path during the install. The tested package is at: https://imagemagick.org/archive//binaries/ImageMagick-6.9.13-14-Q16-x64-dll.exe
 6) Open up the Windows search and type "path". Click on "Edit the system environment variables".
