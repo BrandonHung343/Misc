@@ -8,6 +8,7 @@ import io
 import os
 import errno
 import PyPDF2
+import pdb
 import time
 import pickle
 import shutil
@@ -19,6 +20,7 @@ s = time.ctime()
 dis = s.split()
 name = dis[1] + "_" + dis[2] + "_" + dis[4]
 log = open('error_log_' + name + '.txt', 'a')
+prepros_dir = "prepros/"
 
 # Does some magic to remove the read only functions, from stack overflow
 def handleRemoveReadonly(func, path, exc):
@@ -46,7 +48,7 @@ def combiner(direc, finPath=None):
     count = 0
     pdfWriter = PyPDF2.PdfFileWriter()
     itemName = direc.split('/')[-1]
-    print(itemName)
+    # print(itemName)
     name = itemName + '.pdf'
 
     # Checks if it already exists in the regular paths and erases if true    
@@ -96,10 +98,10 @@ def cleanPre(path):
         # print(direcs)
         if os.path.isdir(path + '/' + direcs):
             # print('made')
-            combiner('prepros/' + direcs)
-            shutil.rmtree('prepros/' + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
+            combiner(prepros_dir + direcs)
+            shutil.rmtree(prepros_dir + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
         if direcs.endswith('pdf'):
-            os.remove('prepros/' + direcs)
+            os.remove(prepros_dir + direcs)
 
 def clearPrepros(path):
     for direcs in os.listdir(path):
@@ -107,9 +109,9 @@ def clearPrepros(path):
         if os.path.isdir(path + '/' + direcs):
             # print('made')
 
-            shutil.rmtree('prepros/' + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
+            shutil.rmtree(prepros_dir + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
         if direcs.endswith('pdf'):
-            os.remove('prepros/' + direcs)
+            os.remove(prepros_dir + direcs)
 
 # Runs the test code to ensure this works; test mode doesn't delete files
 def testFirst(path):
@@ -117,25 +119,48 @@ def testFirst(path):
         # print(direcs)
         if os.path.isdir(path + '/' + direcs):
             # print('made')
-            shutil.rmtree('prepros/' + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
+            shutil.rmtree(prepros_dir + direcs, ignore_errors=False, onerror=handleRemoveReadonly)
         if direcs.endswith('pdf'):
-            os.remove('prepros/' + direcs)
+            os.remove(prepros_dir + direcs)
 
 
 def checkForText(text: str, text_list: list) -> int:
     """Finds the text index if it exists in the text_list"""
     try:
-        print(f"Value {text} in text_list")
+        # print(f"Value {text} in text_list")
         return text_list.index(text)
     except ValueError:
-        print(f"Value error, {text} not in text")
+        # print(f"Value error, {text} not in text")
         return -1
 
 def checkForNumber(text_list: list) -> str:
     """Finds the text matching the expected invoice number format"""
     for text in text_list:
-        if text.isnumeric() and len(text) >= 4:
+        if text.isnumeric() and len(text) > 4:
+            if len(text) > 7:
+                print("Number " + str(text) + " is funky. Should check it out")
             return text
+    # Checks if things are numeric by merging the numbers together
+    pdb.set_trace()
+    possible_doc_number = ""
+    for i in range(len(text_list)):
+        if text_list[i].strip().isnumeric():
+            j = i
+            while j < len(text_list):
+                if text_list[j].strip().isnumeric():
+                    possible_doc_number += text_list[j]
+                else:
+                    # Check if the collected streak is long enough to return
+                    if len(possible_doc_number) >= 4:
+                        return possible_doc_number
+                    # If not, reset the streak
+                    else:
+                        possible_doc_number = ""
+                        break
+                j += 1
+            if j == len(text_list):
+                return possible_doc_number
+    return possible_doc_number
     
 def main():
     global log
@@ -188,7 +213,7 @@ def main():
                 for page in range(pdfReader.numPages):
                     # print('read')
                     pageWriter = PyPDF2.PdfFileWriter()
-                    with open(formalPath + '/' + 'prepros_' + str(count) + '.pdf', 'wb') as fi:
+                    with open(formalPath + '/' + formalPath + '_' + str(count) + '.pdf', 'wb') as fi:
                         pageWriter.addPage(pdfReader.getPage(page))
                         pageWriter.write(fi)
                     count += 1
@@ -212,7 +237,6 @@ def main():
     for file in preprosList:
         req_image = []
         final_text = []
-        final_digits = []
         if not file.endswith('pdf'):
             continue
             
@@ -223,7 +247,7 @@ def main():
         
         w, h = image_jpeg.size
         image_jpeg.crop(w//2, 0, width=(7 * w)//8, height=h//8)
-        image_jpeg.gaussian_blur(sigma=2.0, radius=5) # check the results for this; if not working, change the sigma, It appears a little big
+        image_jpeg.gaussian_blur(sigma=0.7, radius=7) # check the results for this; if not working, change the sigma, It appears a little big
         # display(image_jpeg)
         
         # handle exceptions from the image processing
@@ -264,7 +288,7 @@ def main():
                 if slip_index >= 0:
                     i = slip_index
                     doc_type = "slip"
-                    doc_prefix = "ps"
+                    doc_prefix = ""
                     possText = checkForNumber(temp)
                 else:
                     i = credit_index
@@ -354,7 +378,7 @@ def main():
                     break
 
             counter += 1
-            print("Counter", counter)
+            # print("Counter", counter)
             # print(numbers_dict[dirName])
             
                     
